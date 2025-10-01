@@ -1,6 +1,10 @@
 #include<stdio.h>
 #include<stdlib.h>
+#include <errno.h>
+#include <string.h>
 #include "../include/2.h"
+
+// Result is in include/2.h
 
 // тест
 // .\2.exe      
@@ -12,12 +16,15 @@
 // 11 0 61
 // объяснение 5оу число - 11, -1 - такого быть не может -> 0, 18 теперь знаем из программы
 //2 3 5 7 11 13...
-int* generingSingleNumbers(int* numbers, int nowKol, int needKol) {
+int * generingSingleNumbers(int* numbers, int nowKol, int needKol, Result* result) {
     numbers = realloc(numbers, needKol * sizeof(int));
     if (!numbers) {
-        printf("Memory error.\n");
-        return numbers;
+        result->error_code = -1;
+        snprintf(result->error_message, sizeof(result->error_message), "Wrong memory allocation");
+        return NULL;
     }
+    result->error_code = 0;
+    result->error_message[0] = '\0';
     int num = numbers[nowKol-1] + 1;
     while (nowKol < needKol) {
         int flag = 1; // проверка на простое число
@@ -44,21 +51,39 @@ int main() {
 
     int kol = 100;
     int* numbers = malloc(10 * sizeof(int));
-    if (!numbers) return -1;
+    if (!numbers) {
+        return -1;
+    }
     int* results = malloc(T * sizeof(int));
-    if (!results) return -1;
+    if (!results) {
+        free(numbers);
+        return -1;
+    }
 
+    Result result = {0};
     numbers[0] = 2;
-    numbers = generingSingleNumbers(numbers, 1, kol);
-    if (!numbers) return -1;
+    numbers = generingSingleNumbers(numbers, 1, kol, &result);
+    if (result.error_code == -1) {
+        free(results);
+        printf("%s", result.error_message);
+        return -1;
+    }
     
     int n = 0; // порядковые значения для ввода
     for (int i = 0; i < T; i++) {
         scanf("%d", &n);
-        if (!numbers) return -1;
+        if (!numbers) {
+            free(results);
+            return -1;
+        }
 
         if (n > kol) {
-            numbers = generingSingleNumbers(numbers, kol, n);
+            numbers = generingSingleNumbers(numbers, kol, n, &result);
+            if (result.error_code == -1) {
+                free(results);
+                printf("%s", result.error_message);
+                return -1;
+            }
             kol = n;
         }
         if (n < 1) {
@@ -72,7 +97,5 @@ int main() {
     for (int i = 0; i < T; i++) {
         printf("%d ", results[i]);
     }
-    free(results);
-    free(numbers);
     return 0;
 }
