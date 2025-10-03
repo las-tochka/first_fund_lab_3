@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
-#include "../include/3.h"
+// #include "../include/3.h"
 
 // проверка сколько уникальных коэффициентов мы имеем
 // в num[0] будет коэффициент с максимумом повторений
@@ -30,65 +30,60 @@ int checkIn(double *num, double epsilon){
 }
 
 // поиск решений уравнения
-double* findEqulationSolution(double epsilon, double a, double b, double c) {
-    static double res[3];
-    res[0] = 0.0; res[1] = 0.0; res[2] = 0.0;
+int findEqulationSolution(double epsilon, double a, double b, double c, double * solution) {
     // если уравнение - bx+c=0
     if (fabs(a) < epsilon) {
         if (fabs(b) < epsilon) {
             if (fabs(c) < epsilon) {
-                res[0] = -1.0;
-            } else {
-                res[0] = 0.0;
+                return -1;
             }
-            return res;
+            return 0;
         }
-        res[0] = 1.0; res[1] = -c / b;
-        return res;
+        solution[0] = -c / b;
+        return 1;
     }
     double D = b * b - 4.0 * a * c;
     if (D < -epsilon) { // корней нет
-        return res;
+        return 0;
     }
     if (fabs(D) < epsilon) { // 1 корень
-        res[0] = 1.0; res[1] = -b / (2.0 * a);
-        return res;
+        solution[0] = -b / (2.0 * a);
+        return 1;
     } // 2 корня
     double x1 = (-b + sqrt(D)) / (2.0 * a);
     double x2 = (-b - sqrt(D)) / (2.0 * a);
     if (fabs(x1 - x2) < epsilon) {
-        res[0] = 1.0; res[1] = x1;
-        return res;
+        solution[0] = x1;
+        return 1;
     }
-    res[0] = 2.0; res[1] = x1; res[2] = x2;
-    return res;
+    solution[0] = x1;
+    solution[1] = x2;
+    return 2;
 }
 
-void printSolution(double * solutions) {
-    if (solutions[0] == -1.0) {
+int printSolution(int k, double * solutions) {
+    if (k == -1) {
         printf("An infinite number of solutions\n");
-        return;
+        return 1;
     }
-    if (solutions[0] == 0.0) {
+    if (k == 0) {
         printf("No solutions\n");
-        return;
+        return 1;
     }
-    if (solutions[0] == 1.0) {
-        printf("One solution - %.6f\n", solutions[1]);
-        return;
+    if (k == 1) {
+        printf("One solution - %.6f\n", solutions[0]);
+        return 1;
     }
-    if (solutions[0] == 2.0) {
-        printf("Two solutions - %.6f and %.6f\n", solutions[1], solutions[2]);
-        return;
+    if (k == 2) {
+        printf("Two solutions - %.6f and %.6f\n", solutions[0], solutions[1]);
+        return 1;
     }
-    printf("Somehings goes wrong while finding solutions\n");
-    return;
+    return -1;
 }
 
-void q(int argc, int start, char ** numbers) {
+int q(int argc, int start, char ** numbers) {
     if (argc - start != 4) {
-        printf("Wrong number of arguments\n");
-        return;
+        return -1;
     }
     double epsilon = strtod(numbers[start], NULL);
     double num[3];
@@ -99,20 +94,26 @@ void q(int argc, int start, char ** numbers) {
     int k = checkIn(num, epsilon);
     if (k == 1) {
         if (num[0] == 0) {
-            double sol [3] = {-1.0, 0.0, 0.0};
-            printSolution(sol);
-            return;
+            int k = -1;
+            double sol [2] = {0.0, 0.0};
+            int res = printSolution(k, sol);
+            if (!res) {
+                return -2;
+            }
+            return 0;
         }
-        double* solutions = findEqulationSolution(epsilon, num[0], num[0], num[0]);
-        printSolution(solutions);
-        return;
+        double solutions[2] = {0.0 , 0.0};
+        int k = findEqulationSolution(epsilon, num[0], num[0], num[0], solutions);
+        printSolution(k, solutions);
+        return 0;
     }
     if (k == 2) {
         int j[3] = {0, 0, 0};
         for (int i = 0; i < 3; i++) {
             j[i] = 1;
-            double* solutions = findEqulationSolution(epsilon, num[j[0]], num[j[1]], num[j[2]]);
-            printSolution(solutions);
+            double solutions[2] = {0.0, 0.0};
+            int k = findEqulationSolution(epsilon, num[j[0]], num[j[1]], num[j[2]], solutions);
+            printSolution(k, solutions);
             j[i] = 0;
         }
     }
@@ -123,14 +124,16 @@ void q(int argc, int start, char ** numbers) {
             for (int i2 =0; i2 < 3; i2++) {
                 if (i2 != i1) {
                     j[i2] = 2;
-                    double* solutions = findEqulationSolution(epsilon, num[j[0]], num[j[1]], num[j[2]]);
-                    printSolution(solutions);
+                    double solutions[2] = {0.0, 0.0};
+                    int k = findEqulationSolution(epsilon, num[j[0]], num[j[1]], num[j[2]], solutions);
+                    printSolution(k, solutions);
                     j[i2] = 0;
                 }
             }
             j[i1] = 0;
         }
     }
+    return 1;
 }
 
 // тесты
@@ -138,32 +141,30 @@ void q(int argc, int start, char ** numbers) {
 // .\3.exe -m 2 0
 // .\3.exe -m 1 2
 // .\3.exe -m 2.0 1.3
-void m(int argc, int start, char ** numbers) {
+int m(int argc, int start, char ** numbers) {
     if (argc - start != 2) {
-        printf("Wrong number of arguments\n");
-        return;
+        return -1;
     }
     double n1 = strtod(numbers[start], NULL);
     double n2 = strtod(numbers[start + 1], NULL);
-    if (n1 == 0.0 || n2 == 0.0 || n1 != trunc(n1) || n2 != trunc(n2)) {
-        printf("Numbers can't be 0 or double\n");
-        return;
+    if (n1 == 0.0 || n2 == 0.0 || n1 - (int) n1 != 0 || n2 - (int) n2 != 0) {
+        return -3;
     }
-    if (n1 / n2 != trunc(n1 / n2)) {
+    if ((int) n1 % (int) n2 == 0) {
         printf("The first number is a multiple of the second\n");
-        return;
+        return 0;
     }
     printf("The first number is not a multiple of the second\n");
+    return 0;
 }
 
 // тесты
 // .\3.exe -t 0.001 3 4 5
 // .\3.exe -t 0.001 3 4 5.1
 // .\3.exe -t 0.01 3 4 5.001
-void t(int argc, int start, char ** numbers) {
+int t(int argc, int start, char ** numbers) {
     if (argc - start != 4) {
-        printf("Wrong number of arguments\n");
-        return;
+        return -1;
     }
     double epsilon = strtod(numbers[start], NULL);
     double num[3];
@@ -173,27 +174,29 @@ void t(int argc, int start, char ** numbers) {
 
     if (num[0] > num[1] && num[0] > num[2]) {
         if (fabs(num[1] * num[1] + num[2] * num[2] - num[0] * num[0]) < epsilon) {
-            printf("Such a right triangle exists");
+            return 1;
         } else {
-            printf("Such a right triangle doesn't exist");
+            return 2;
         }
-        return;
+        return 0;
     }
     if (num[1] > num[0] && num[1] > num[2]) {
         if (fabs(num[0] * num[0] + num[2] * num[2] - num[1] * num[1]) < epsilon) {
-            printf("Such a right triangle exists");
+            return 1;
         } else {
-            printf("Such a right triangle doesn't exist");
+            return 2;
         }
-        return;
+        return 0;
     }
     if (fabs(num[0] * num[0] + num[1] * num[1] - num[2] * num[2]) < epsilon) {
-            printf("Such a right triangle exists");
+            return 1;
         } else {
-            printf("Such a right triangle doesn't exist");
+            return 2;
         }
+    return 0;
 }
 
+// отрицательные для ошибок, положительные - для результатов
 int main(int argc, char *argv[]) {
     int number = -1;
     char *flag = NULL;
@@ -209,15 +212,30 @@ int main(int argc, char *argv[]) {
         printf("Flag is not given");
         return 1;
     }
+
+    int res = 0;
     if (flag[1] == 'q') {
-        q(argc, start, argv);
+        res = q(argc, start, argv);
     } else if (flag[1] == 'm') {
-        m(argc, start, argv);
+        res = m(argc, start, argv);
     } else if (flag[1] == 't') {
-        t(argc, start, argv);
+        res = t(argc, start, argv);
+        if (res == 1) {
+            printf("Such a right triangle exists");
+        } else if (res == 2) {
+            printf("Such a right triangle doesn't exist");
+        }
     } else {
         printf("Incorrect flag");
         return 1;
+    }
+
+    if (res == -1) {
+        printf("Wrong number of arguments\n");
+    } else if (res == -2) {
+        printf("Finding solutions in q goes wrong\n");
+    } else if (res == -3) {
+        printf("Numbers in m can't be 0 or double\n");
     }
     return 0;
 }
